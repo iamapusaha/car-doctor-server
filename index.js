@@ -44,7 +44,6 @@ async function run() {
         })
         //Bookings
         app.get('/bookings', async (req, res) => {
-            console.log(req.query);
             let query = {};
             if (req.query.email) {
                 query = { email: req.query.email }
@@ -58,7 +57,18 @@ async function run() {
             const result = await bookingCollection.insertOne(booking)
             res.send(result)
         })
-
+        app.patch('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: new ObjectId(id) };
+            const updateBooking = req.body;
+            const updateDoc = {
+                $set: {
+                    status: updateBooking.status
+                },
+            };
+            const result = await bookingCollection.updateOne(filter, updateDoc)
+            res.send(result)
+        })
         app.delete('/bookings/:id', async (req, res) => {
             const id = req.params.id;
             const query = { _id: new ObjectId(id) };
