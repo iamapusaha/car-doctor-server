@@ -3,11 +3,12 @@ const cors = require('cors');
 const app = express();
 const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 const port = process.env.PORT || 5000;
 require('dotenv').config();
-const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+
 
 app.use(cors({
     origin: ['http://localhost:5173'],
@@ -15,6 +16,22 @@ app.use(cors({
 }))
 app.use(express.json())
 app.use(cookieParser())
+
+const varifyToken = async (req, res, next) => {
+    const token = req.cookies.token;
+    console.log('value of token in middleware', token);
+    if (!token) {
+        return res.status(401).send({ message: 'not authorized' })
+    }
+    jwt.verify(token, process.env.JWT_SECRET_KEY, (err, decoded) => {
+        if (err) {
+            return res.status(401).send({ message: 'anauthorized' })
+        }
+        console.log('value in the token', decoded);
+        req.user = decoded;
+        next()
+    })
+}
 
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASSWORD}@cluster0.hfqgfmf.mongodb.net/?retryWrites=true&w=majority`;
@@ -66,8 +83,9 @@ async function run() {
             res.send(result)
         })
         //Bookings
-        app.get('/bookings', async (req, res) => {
-            console.log(req.cookies.token);
+        app.get('/bookings', varifyToken, async (req, res) => {
+            // console.log(req.cookies.token);
+            console.log('user on the valid token', req.user);
             let query = {};
             if (req.query.email) {
                 query = { email: req.query.email }
